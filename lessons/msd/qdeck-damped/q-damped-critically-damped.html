@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Q2</title>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Shared quiz template -->
+  <link rel="stylesheet" href="../assets/quiz/quiz.css">
+  <script defer src="../assets/quiz/quiz.js"></script>
+</head>
+
+<body>
+  <!-- answer/tol are per-question -->
+  <div class="card quiz-num"
+       data-answer="1.0"
+       data-tol="0.0001"
+       data-decimals="1"
+       data-units="\,\mathrm{m/s}">
+    <h2 style="margin-top:0;">Explore: Damped Solution</h2>
+
+    <p><strong>For what value of $\zeta$ does the solution reach $y=0$ fastest?</strong></p>
+
+    <div class="row" style="margin-top:0.6rem;">
+      <input type="text" placeholder="e.g., 0.5" inputmode="decimal" />
+      <button type="button" data-action="check">Check</button>
+      <button type="button" data-action="show">Show solution</button>
+      <button type="button" data-action="reset">Reset</button>
+    </div>
+
+    <div class="feedback" aria-live="polite"></div>
+
+    <!-- Optional per-question feedback snippets -->
+    <div class="solution-correct">✅ Correct. This is known as an <b>critically damped</b> system because the solution decays the quickest.</div>
+    <div class="solution-wrong">❌ Not quite.</div>
+    <div class="solution-show">Solution: $\zeta=1$. This is known as an <b>critically damped</b> system because the solution decays the quickest.</div>
+  </div>
+</body>
+</html>

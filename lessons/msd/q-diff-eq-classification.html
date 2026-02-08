@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Q1</title>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Shared quiz template -->
+  <link rel="stylesheet" href="../../assets/quiz/quiz.css">
+  <script defer src="../../assets/quiz/quiz.js"></script>
+</head>
+
+<body>
+  <div class="card quiz-mcq">
+    <h2 style="margin-top:0;">Quick Check: Differential Equation Classification</h2>
+
+    <p><strong>Which is an example of a homogeneous ordinary differential equation?</strong></p>
+
+    <div class="choices" data-correct="3">
+      <button type="button" class="choice" data-i="0" aria-pressed="false">
+        <div class="tag">A</div><div class="content">$\ddot{y} + \dot{y} + y^2 = 0$</div>
+      </button>
+      <button type="button" class="choice" data-i="1" aria-pressed="false">
+        <div class="tag">B</div><div class="content">$\ddot{y} + \dot{y} + y = \sin{t}$</div>
+      </button>
+      <button type="button" class="choice" data-i="2" aria-pressed="false">
+        <div class="tag">C</div><div class="content">$\frac{\partial^2 f}{\partial x^2} + \frac{\partial^2 f}{\partial y^2} = 0$</div>
+      </button>
+      <button type="button" class="choice" data-i="3" aria-pressed="false">
+        <div class="tag">D</div><div class="content">$x \frac{d^2y}{dx^2} + \frac{dy}{dx} = 3y$</div>
+      </button>
+    </div>
+
+    <div class="row" style="margin-top:0.9rem;">
+      <button type="button" data-action="check">Check</button>
+      <button type="button" data-action="show">Show solution</button>
+      <button type="button" data-action="reset">Reset</button>
+    </div>
+
+    <div class="feedback" aria-live="polite"></div>
+
+    <div class="solution-correct">✅ Correct. This equation meets the criteria of a homogeneous ODE.</div>
+    <div class="solution-wrong" data-i="0">❌ Not quite. $y^2$ makes the equation non-linear and nonhomogeneous.</div>
+    <div class="solution-wrong" data-i="1">❌ Not quite. $\sin t$ is a forcing term, making it nonhomogeneous.</div>
+    <div class="solution-wrong" data-i="2">❌ Not quite. This is a homogeneous <b>partial</b> differential equation. It is the famous Laplace equation.</div>
+    <div class="solution-wrong">❌ Not quite.</div>
+    <div class="solution-show">Solution: D. This equation meets the criteria of a homogeneous ODE.</div>
+  </div>
+</body>
+</html>
