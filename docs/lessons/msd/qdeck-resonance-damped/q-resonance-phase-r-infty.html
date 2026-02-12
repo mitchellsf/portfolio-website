@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Q2</title>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Shared quiz template -->
+  <link rel="stylesheet" href="../../../assets/quiz/quiz.css">
+  <script defer src="../../../assets/quiz/quiz.js"></script>
+</head>
+
+<body>
+  <!-- answer/tol are per-question -->
+  <div class="card quiz-num"
+       data-answer="180.0"
+       data-tol="1"
+       data-decimals="0"
+       data-units="\,(degrees)">
+    <h2 style="margin-top:0;">Explore: Forced Damped Solution</h2>
+
+    <p><strong>What is the phase lag for $r\gg 1$?</strong></p>
+
+    <div class="row" style="margin-top:0.6rem;">
+      <input type="text" placeholder="e.g., 30" inputmode="decimal" />
+      <button type="button" data-action="check">Check</button>
+      <button type="button" data-action="show">Show solution</button>
+      <button type="button" data-action="reset">Reset</button>
+    </div>
+
+    <div class="feedback" aria-live="polite"></div>
+
+    <!-- Optional per-question feedback snippets -->
+    <div class="solution-correct">✅ Correct. 
+      For high forcing frequencies, inertia dominates and the force balance simplifies to $m\ddot{y} \approx f$.
+      If $y(t) = \sin (\omega t)$ then $\ddot{y}(t) = -\omega^2 \sin (\omega t)$, so acceleration is $180^\circ$ out of phase with displacement.
+    </div>
+    <div class="solution-wrong">❌ Not quite.</div>
+    <div class="solution-show">Solution: $\phi = 180^\circ$. 
+      For high forcing frequencies, inertia dominates and the force balance simplifies to $m\ddot{y} \approx f$.
+      If $y(t) = \sin (\omega t)$ then $\ddot{y}(t) = -\omega^2 \sin (\omega t)$, so acceleration is $180^\circ$ out of phase with displacement.
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,95 @@
+/* Colors for markdown */
+
+.red  { color: red; }
+.blue { color: blue; }
+.green { color: green; }
+
+/* Hide KaTeX equation number/tag in hover popups */
+.tippy-box .katex-display .tag {
+  display: none !important;
+}
+
+/* Adds text defnitions when hovering ovder word*/
+/* Make tooltip terms behave like Quarto cross-references */
+.tip.quarto-xref {
+  color: var(--bs-link-color);
+  text-decoration: underline;
+  text-decoration-thickness: from-font;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+
+.tip.quarto-xref:hover,
+.tip.quarto-xref:focus {
+  color: var(--bs-link-hover-color);
+  background: rgba(0,0,0,0.05);
+  border-radius: 0.25em;
+  outline: none;
+}
+
+/* **************************************************** */
+/* allow figures captions to be centered */
+.text-center figure { 
+  text-align: center; 
+}
+.text-center figure figcaption { 
+  text-align: center; 
+}
+
+
+/* Outer container: controls what you see on the Quarto page */
+.game-shell{
+  width: min(900px, 100%);
+  margin: 0 auto;
+  overflow: hidden;     /* critical: hides anything that overflows */
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+/* The iframe itself: no borders, no extra spacing */
+.game-iframe{
+  display: block;       /* removes the inline gap under iframes */
+  border: 0;
+  margin: 0;
+  padding: 0;
+
+  /* These are the "unscaled" dimensions of the embedded page */
+  width: 500px;
+  height: 600px;
+
+  /* Scale it down */
+  transform: scale(1.0);
+  transform-origin: 0 0;
+}
+
+/* expandable box showing additional derivations, details, etc. */
+
+details.deep-dive {
+  border: 1px solid #d0d7de;
+  border-left: 6px solid #6f42c1;  /* accent bar */
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  background: #fafbfc;
+}
+
+details.deep-dive > summary {
+  cursor: pointer;
+  font-weight: 650;
+  list-style: none;
+}
+
+details.deep-dive > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.deep-dive > summary::before {
+  content: "▸ ";
+  font-weight: 700;
+}
+
+details.deep-dive[open] > summary::before {
+  content: "▾ ";
+}
+
