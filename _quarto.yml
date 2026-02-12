@@ -1,0 +1,87 @@
+project:
+  type: website
+  # output-dir: docs
+  output-dir: ../portfolio-website/docs
+  resources:
+    - fun/games/blockjump_build/**
+    - assets/
+    - /lessons/msd/qdeck-undamped/**
+    - /lessons/msd/qdeck-damped/**
+    - /lessons/msd/qdeck-resonance/**
+    - /lessons/msd/qdeck-resonance-damped/**
+
+website:
+  title: "Mitchell Fowler - Portfolio"
+  site-url: "https://mitchellsf.github.io/portfolio/"
+
+  navbar:
+    background: primary
+    search: true
+    left:
+      - text: Home
+        href: index.qmd
+      - text: Resume
+        href: resume/cv.qmd
+      - text: Research
+        href: research/wall_modeling.qmd
+      - text: Lessons
+        href: lessons/msd/msd.qmd
+      - text: Fun
+        href: fun/fun.qmd
+
+  sidebar:
+    style: docked
+    search: false
+    contents:
+      - text: Home
+        href: index.qmd
+
+      - section: Resume
+        contents:
+          - text: Curriculum Vitae
+            href: resume/cv.qmd
+          - text: Teaching Philosophy
+            href: resume/teaching_philosophy.qmd
+
+      - section: Research
+        contents:
+          - text: Wall Modeling
+            href: research/wall_modeling.qmd
+          - text: Separation Modeling
+            href: research/separation_modeling.qmd
+
+      - section: Lessons
+        contents:
+          - text: Mass-Spring-Damper
+            href: lessons/msd/msd.qmd
+
+      # - section: Fun
+      #   contents:
+      #     - text: Games
+      #       href: fun/games/games.qmd
+
+      - text: Fun
+        href: fun/fun.qmd
+            
+
+  page-footer:
+    left: "© (2026) Mitchell Fowler"
+    right:
+      - text: "Email"
+        href: "mailto:engineeringtutor.nola@gmail.com"
+      # - text: "GitHub"
+      #   href: "https://github.com/mitchellsf"
+
+format:
+  html:
+    theme: flatly
+    toc: true
+    code-copy: true
+    link-external-newwindow: true
+    css:
+      - styles.css
+      - assets/quiz/quiz.css
+    include-after-body:
+      - tooltips.html
+      - _includes/quiz-iframe-resize.html
+    html-math-method: katex

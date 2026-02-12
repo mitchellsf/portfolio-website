@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mass-Spring-Damper Interact (time history + animation)</title>
+  <style>
+    :root{
+      --bg: #ffffff;
+      --fg: #000000;
+      --grid: rgba(0,0,0,0.18);
+      --axis: rgba(0,0,0,0.95);
+      --muted: rgba(0,0,0,0.70);
+
+      /* sliders */
+      --track: #a9cff2;
+      --thumb: #0c5a78;
+      --thumb-ring: #08394b;
+      --pl: 80px;
+      --lw: 40px;
+      --vw: 50px;
+      --pr: 20px;
+
+      /* font sizes */
+      --ui-font: 24px;     /* sliders (DOM text) */
+      --tick-font: 20px;   /* canvas tick numbers */
+      --axis-font: 24px;   /* canvas axis labels */
+
+/* layout */
+--gap: 26px;
+--anim-col: clamp(320px, 30vw, 440px); /* right panel width */
+    }
+
+    html, body { height: auto; }
+    body{
+      margin:0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .wrap{
+      width: min(1400px, 96vw);
+      padding: 18px 10px 22px;
+      box-sizing: border-box;
+      margin: 0 auto;
+    }
+
+    .top{
+      display: grid;
+      grid-template-columns: 1fr var(--anim-col);
+      gap: var(--gap);
+      align-items: start;
+    }
+
+    .panel{
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    canvas{
+      width: 100%;
+      height: 500px; /* JS will override to keep plot/anim aligned */
+      display: block;
+      background: #ffffff;
+    }
+
+    .bottom{
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr var(--anim-col);
+      gap: var(--gap);
+      align-items: start;
+    }
+
+    .sliders{
+      width: 100%;
+      display:grid;
+      gap: 6px;
+      box-sizing: border-box;
+    }
+
+    .row{
+      display: grid;
+      grid-template-columns: var(--pl) var(--lw) 1fr var(--vw) var(--pr);
+      column-gap: 0px;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .row .lbl{ grid-column: 2; }
+    .row input[type="range"]{ grid-column: 3; width: 100%; min-width: 0; }
+    .row .val{ grid-column: 4; text-align: right; }
+
+    .lbl{
+      font-size: var(--ui-font);
+      font-weight: 400;
+      color: var(--fg);
+      user-select:none;
+      white-space: nowrap;
+    }
+
+    .val{
+      text-align:center;
+      font-variant-numeric: tabular-nums;
+      font-size: var(--ui-font);
+      font-weight: 400;
+      color: var(--fg);
+      user-select:none;
+      white-space: nowrap;
+    }
+
+    input[type="range"]{
+      -webkit-appearance:none;
+      appearance:none;
+      width:100%;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--track);
+      outline:none;
+      margin: 0;
+    }
+    input[type="range"]::-webkit-slider-runnable-track{
+      height: 12px;
+      border-radius: 999px;
+      background: var(--track);
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none;
+      appearance:none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--thumb);
+      border: 3px solid var(--thumb-ring);
+      box-shadow: 0 5px 12px rgba(0,0,0,0.18);
+      cursor:pointer;
+      margin-top: -7px;
+    }
+
+    input[type="range"]::-moz-range-track{
+      height: 12px;
+      border-radius: 999px;
+      background: var(--track);
+    }
+    input[type="range"]::-moz-range-thumb{
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--thumb);
+      border: 3px solid var(--thumb-ring);
+      box-shadow: 0 5px 12px rgba(0,0,0,0.18);
+      cursor:pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="panel">
+        <canvas id="plot" aria-label="Time history"></canvas>
+      </div>
+      <div class="panel">
+        <canvas id="anim" aria-label="Mass-spring-damper animation"></canvas>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="sliders" id="leftSliders">
+        <div class="row">
+          <div class="lbl">ωₙ</div>
+          <input id="wn" type="range" min="0" max="5" step="0.1" value="3.0" />
+          <div class="val" id="wnVal">3.0</div>
+        </div>
+
+        <div class="row">
+          <div class="lbl">ζ</div>
+          <input id="zeta" type="range" min="0" max="2" step="0.1" value="0.0" />
+          <div class="val" id="zetaVal">0.0</div>
+        </div>
+      </div>
+
+      <div class="sliders" id="rightSliders">
+        <div class="row" id="timeRow">
+          <div class="lbl">t</div>
+          <input id="tSlider" type="range" min="0" max="10" step="0.01" value="0.00" />
+          <div class="val" id="tVal">0.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // Unforced MSD: y'' + 2 ζ ω_n y' + ω_n^2 y = 0
+  // Fixed IC: y(0)=1, y'(0)=0
+  const y0 = 1.0;
+  const v0 = 0.0;
+
+  const T_MIN = 0.0;
+  const T_MAX = 10.0;
+
+  // Plot settings
+  const NX = 4;
+  const NY = 4;
+  const Y_MIN = -1.0;
+  const Y_MAX =  1.0;
+
+  // Animation playback: seconds of model time per real second
+  const PLAYBACK = 1.25;
+
+
+// ===========================
+// Appearance controls (EDIT ME)
+// ===========================
+const STYLE = {
+  layout: {
+    plotHeightRatio: 0.62,   // plot height = plotWidth * ratio
+  },
+  plot: {
+    margin: { l: 90, r: 24, t: 18, b: 66 },
+    gridLW: 1.5,
+    axisLW: 3.0,
+    curveLW: 4.0,
+    markerR: 7.0,
+    legendPad: 10,
+  },
+  anim: {
+    // padding inside animation canvas (gives room for y indicator left of rails)
+    padL: 110,
+    padR: 24,
+    padV: 24,
+
+    topBarY: 26,
+
+    // geometry + sizes
+    railOffset: 14,
+    massSizeFracW: 0.62,   // fraction of inner width used for square mass size candidate
+    massSizeFracH: 0.28,   // fraction of canvas height used for square mass size candidate
+    eqTopFrac: 0.55,       // equilibrium mass-top location as fraction of canvas height
+    dispScaleFrac: 0.10,   // displacement scale (pixels) as fraction of canvas height
+
+    // strokes
+    wallLW: 10,
+    railLW: 8,
+    springLW: 6,
+    massLW: 10,
+
+    // spring appearance
+    springCoils: 7,
+    springAmpFrac: 0.060,  // amplitude as fraction of canvas width
+    springInset: 12,       // distance below top bar
+
+    // position vector placement (outside rails)
+    posArrowGap: 42,       // distance left of left rail
+    posArrowLW: 4,
+    yLabelFontFrac: 0.12,  // font size relative to canvas height
+    yLabelGap: 18,         // label offset from arrow x
+
+    // force arrows
+    forceMaxFrac: 0.34,    // max arrow length fraction of canvas height
+    dampingBoost: 2.2,     // additional scaling for damping arrow visibility
+    forceArrowLW: 6,
+
+    // arrowhead size multiplier (triangles)
+    arrowHeadScale: 1.25,
+  }
+};
+
+
+  const plotCanvas = document.getElementById("plot");
+  const animCanvas = document.getElementById("anim");
+  const plotCtx = plotCanvas.getContext("2d");
+  const animCtx = animCanvas.getContext("2d");
+
+  const wnEl = document.getElementById("wn");
+  const zetaEl = document.getElementById("zeta");
+  const tEl = document.getElementById("tSlider");
+  const wnValEl = document.getElementById("wnVal");
+  const zetaValEl = document.getElementById("zetaVal");
+  const tValEl = document.getElementById("tVal");
+  const timeRow = document.getElementById("timeRow");
+
+  let tAnim = 0.0;
+  let lastTS = null;
+  let isScrubbing = false;
+
+  // Cached time series for plot
+  const N_SAMP = 900;
+  let tArr = new Float32Array(N_SAMP);
+  let yArr = new Float32Array(N_SAMP);
+
+  function fmt1(x){
+    const y = (Math.abs(x) < 5e-4) ? 0 : x;
+    return y.toFixed(1);
+  }
+  function fmt2(x){
+    const y = (Math.abs(x) < 5e-6) ? 0 : x;
+    return y.toFixed(2);
+  }
+
+  function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+
+  function getParams(){
+    const wn = parseFloat(wnEl.value);
+    const zeta = parseFloat(zetaEl.value);
+    return { wn, zeta };
+  }
+
+  function yvAt(t, wn, zeta){
+    const eps = 1e-7;
+
+    // Handle wn ~ 0: equation degenerates to y'' = 0, with y=1, v=0 => y=1
+    if (Math.abs(wn) < 1e-8){
+      return { y: 1.0, v: 0.0 };
+    }
+
+    if (zeta < 1.0 - 1e-6){
+      const wd = wn * Math.sqrt(1.0 - zeta*zeta);
+      const a = zeta * wn;
+      const b = zeta / Math.sqrt(1.0 - zeta*zeta); // because y0=1, v0=0
+      const c = Math.cos(wd*t);
+      const s = Math.sin(wd*t);
+      const e = Math.exp(-a*t);
+      const bracket = c + b*s;
+      const y = e * bracket;
+      const v = -a*y + e * (-wd*s + b*wd*c);
+      return { y, v };
+    } else if (Math.abs(zeta - 1.0) <= 1e-6){
+      // Critical: y=(1+wn t)e^{-wn t}
+      const e = Math.exp(-wn*t);
+      const y = (1.0 + wn*t) * e;
+      const v = -wn*wn*t * e;
+      return { y, v };
+    } else {
+      // Overdamped
+      const g = Math.sqrt(zeta*zeta - 1.0);
+      const r1 = -wn*(zeta - g);
+      const r2 = -wn*(zeta + g);
+      // C1 + C2 = 1; r1 C1 + r2 C2 = 0
+      const C1 = (r2)/(r2 - r1);
+      const C2 = 1.0 - C1;
+      const e1 = Math.exp(r1*t);
+      const e2 = Math.exp(r2*t);
+      const y = C1*e1 + C2*e2;
+      const v = r1*C1*e1 + r2*C2*e2;
+      return { y, v };
+    }
+  }
+
+  function rebuildSeries(){
+    const { wn, zeta } = getParams();
+    for (let i=0; i<N_SAMP; i++){
+      const tt = T_MIN + (T_MAX - T_MIN) * (i/(N_SAMP-1));
+      tArr[i] = tt;
+      yArr[i] = yvAt(tt, wn, zeta).y;
+    }
+  }
+
+  function drawArrow(ctx, x1, y1, x2, y2, width){
+    const dx = x2-x1, dy = y2-y1;
+    const L = Math.hypot(dx,dy);
+    if (L < 1e-6) return;
+    const ux = dx/L, uy = dy/L;
+
+    // shaft
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+    ctx.stroke();
+
+    // head
+    const headScale = (STYLE && STYLE.anim && STYLE.anim.arrowHeadScale) ? STYLE.anim.arrowHeadScale : 1.0;
+    const headLen = headScale * Math.max(18, 5*width + 6);
+    const headW  = headScale * Math.max(14, 4*width + 4);
+    const bx = x2 - ux*headLen;
+    const by = y2 - uy*headLen;
+    const px = -uy, py = ux;
+
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(bx + px*headW*0.5, by + py*headW*0.5);
+    ctx.lineTo(bx - px*headW*0.5, by - py*headW*0.5);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawPlot(){
+    const W = plotCanvas.getBoundingClientRect().width;
+    const H = plotCanvas.getBoundingClientRect().height;
+
+    const dpr = window.devicePixelRatio || 1;
+    // Ensure transform already set in resize
+    plotCtx.clearRect(0,0,W,H);
+
+    const root = getComputedStyle(document.documentElement);
+    const gridCol = root.getPropertyValue("--grid").trim();
+    const axisCol = root.getPropertyValue("--axis").trim();
+    const tickFont = parseFloat(root.getPropertyValue("--tick-font")) || 20;
+    const axisFont = parseFloat(root.getPropertyValue("--axis-font")) || 24;
+
+    // margins (tuned for the "clean" look)
+    const m = { l: 90, r: 24, t: 18, b: 66 };
+    const pw = W - m.l - m.r;
+    const ph = H - m.t - m.b;
+
+    function xToPx(t){ return m.l + (t - T_MIN)/(T_MAX - T_MIN) * pw; }
+    function yToPx(y){ return m.t + (Y_MAX - y)/(Y_MAX - Y_MIN) * ph; }
+
+    // grid
+    plotCtx.lineWidth = STYLE.plot.gridLW;
+    plotCtx.strokeStyle = gridCol;
+    for (let i=0; i<=NX; i++){
+      const x = m.l + pw*(i/NX);
+      plotCtx.beginPath(); plotCtx.moveTo(x,m.t); plotCtx.lineTo(x,m.t+ph); plotCtx.stroke();
+    }
+    for (let j=0; j<=NY; j++){
+      const y = m.t + ph*(j/NY);
+      plotCtx.beginPath(); plotCtx.moveTo(m.l,y); plotCtx.lineTo(m.l+pw,y); plotCtx.stroke();
+    }
+
+    // axes box
+    plotCtx.lineWidth = STYLE.plot.axisLW;
+    plotCtx.strokeStyle = axisCol;
+    plotCtx.strokeRect(m.l, m.t, pw, ph);
+
+    // ticks
+    plotCtx.fillStyle = axisCol;
+    plotCtx.font = `${tickFont}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif`;
+    plotCtx.textBaseline = "top";
+    plotCtx.textAlign = "center";
+    for (let i=0; i<=NX; i++){
+      const tt = T_MIN + (T_MAX - T_MIN) * (i/NX);
+      const x = xToPx(tt);
+      plotCtx.fillText(tt.toFixed(1), x, m.t + ph + 6);
+    }
+    plotCtx.textBaseline = "middle";
+    plotCtx.textAlign = "right";
+    for (let j=0; j<=NY; j++){
+      const yy = Y_MAX - (Y_MAX - Y_MIN)*(j/NY);
+      const y = yToPx(yy);
+      plotCtx.fillText(yy.toFixed(1), m.l - 12, y);
+    }
+
+    // axis labels
+    plotCtx.font = `${axisFont}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif`;
+    plotCtx.textAlign = "center";
+    plotCtx.textBaseline = "top";
+    plotCtx.fillText("t", m.l + pw/2, m.t + ph + 40);
+
+    plotCtx.save();
+    plotCtx.translate(30, m.t + ph/2);
+    plotCtx.rotate(-Math.PI/2);
+    plotCtx.textAlign = "center";
+    plotCtx.textBaseline = "top";
+    plotCtx.fillText("y", 0, 0);
+    plotCtx.restore();
+
+    // clip to plot window for curves
+    plotCtx.save();
+    plotCtx.beginPath();
+    plotCtx.rect(m.l, m.t, pw, ph);
+    plotCtx.clip();
+
+    // Solid curve
+    plotCtx.lineWidth = STYLE.plot.curveLW;
+    plotCtx.strokeStyle = "#000";
+    plotCtx.beginPath();
+    for (let i=0; i<N_SAMP; i++){
+      const x = xToPx(tArr[i]);
+      const y = yToPx(yArr[i]);
+      if (i===0) plotCtx.moveTo(x,y);
+      else plotCtx.lineTo(x,y);
+    }
+    plotCtx.stroke();
+
+    // Envelope (only underdamped)
+    const { wn, zeta } = getParams();
+    const showEnv = (zeta < 1.0 - 1e-6) && (wn > 1e-8);
+    if (showEnv){
+      plotCtx.setLineDash([10, 8]);
+      plotCtx.lineWidth = 3;
+      plotCtx.strokeStyle = "#000";
+      plotCtx.beginPath();
+      for (let i=0; i<N_SAMP; i++){
+        const tt = tArr[i];
+        const env = Math.exp(-wn*zeta*tt); // a=1 for fixed IC
+        const x = xToPx(tt);
+        const y = yToPx(env);
+        if (i===0) plotCtx.moveTo(x,y);
+        else plotCtx.lineTo(x,y);
+      }
+      plotCtx.stroke();
+
+      plotCtx.beginPath();
+      for (let i=0; i<N_SAMP; i++){
+        const tt = tArr[i];
+        const env = -Math.exp(-wn*zeta*tt);
+        const x = xToPx(tt);
+        const y = yToPx(env);
+        if (i===0) plotCtx.moveTo(x,y);
+        else plotCtx.lineTo(x,y);
+      }
+      plotCtx.stroke();
+      plotCtx.setLineDash([]);
+    }
+
+    // Marker at current time
+    const yNow = yvAt(tAnim, wn, zeta).y;
+    const xNow = xToPx(tAnim);
+    const yPix = yToPx(yNow);
+    plotCtx.fillStyle = "#000";
+    plotCtx.beginPath();
+    plotCtx.arc(xNow, yPix, STYLE.plot.markerR, 0, Math.PI*2);
+    plotCtx.fill();
+
+    plotCtx.restore(); // clip
+
+    // Legend (only when envelope shown)
+    if (showEnv){
+      const pad = 10;
+      const boxW = 250;
+      const boxH = 50;
+      const bx = m.l + pw - boxW - 12;
+      const by = m.t + 12;
+
+      plotCtx.fillStyle = "#fff";
+      plotCtx.strokeStyle = axisCol;
+      plotCtx.lineWidth = 2;
+      plotCtx.fillRect(bx,by,boxW,boxH);
+      plotCtx.strokeRect(bx,by,boxW,boxH);
+
+      // sample dashed line
+      plotCtx.save();
+      plotCtx.setLineDash([10,8]);
+      plotCtx.strokeStyle = "#000";
+      plotCtx.lineWidth = 3;
+      plotCtx.beginPath();
+      plotCtx.moveTo(bx + 16, by + boxH/2);
+      plotCtx.lineTo(bx + 70, by + boxH/2);
+      plotCtx.stroke();
+      plotCtx.restore();
+
+      plotCtx.fillStyle = "#000";
+      plotCtx.font = `${axisFont}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif`;
+      plotCtx.textBaseline = "middle";
+      plotCtx.textAlign = "left";
+      plotCtx.fillText("± exp(−ωₙ ζ t)", bx + 84, by + boxH/2);
+    }
+  }
+
+  function drawSpring(ctx, x, y1, y2, nCoils, amp, width, color){
+    // Simple zig-zag spring (no extra connection stubs)
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+
+    const len = y2 - y1;
+    const nSeg = Math.max(8, nCoils * 2); // zig-zag segments
+
+    ctx.beginPath();
+    ctx.moveTo(x, y1);
+    for (let i = 1; i < nSeg; i++){
+      const yy = y1 + len * (i / nSeg);
+      const xx = x + ((i % 2 === 0) ? -amp : amp);
+      ctx.lineTo(xx, yy);
+    }
+    ctx.lineTo(x, y2);
+    ctx.stroke();
+  }
+
+  function drawAnim(){
+    const W = animCanvas.getBoundingClientRect().width;
+    const H = animCanvas.getBoundingClientRect().height;
+    animCtx.clearRect(0,0,W,H);
+
+    // Colors
+    const springCol = "rgba(160,160,160,0.95)";
+    const damperCol = "rgba(220,0,0,0.95)";
+    const massFill = "rgba(220,224,255,1.0)";
+    const massStroke = "rgba(0,0,220,1.0)";
+    const railCol = "rgba(220,0,0,1.0)";
+
+    const { wn, zeta } = getParams();
+    const { y, v } = yvAt(tAnim, wn, zeta);
+
+    // geometry (extra left padding so the y label/arrow can sit outside the rails)
+    const padV = STYLE.anim.padV;
+    const padL = STYLE.anim.padL;
+    const padR = STYLE.anim.padR;
+
+    const topBarY = STYLE.anim.topBarY;
+    const ceilX1 = padL + 10;
+    const ceilX2 = W - padR - 10;
+
+    const innerW = Math.max(10, W - padL - padR);
+
+    // Mass size (keep square regardless of panel aspect)
+    const massS = Math.min(innerW * STYLE.anim.massSizeFracW, H * STYLE.anim.massSizeFracH);
+    const massW = massS;
+    const massH = massS;
+    const massX = padL + (innerW - massW)/2;
+
+    // Equilibrium top position and displacement scaling
+    const topEq = H * STYLE.anim.eqTopFrac;
+    const dispScale = H * STYLE.anim.dispScaleFrac;
+    const topY = topEq - y * dispScale;
+    const massY = topY;
+    const massCX = massX + massW/2;
+
+    // Rails
+    const railTop = topBarY;
+    const railBottom = H - padV;
+    const railOffset = STYLE.anim.railOffset;
+    const railXL = massX - railOffset;
+    const railXR = massX + massW + railOffset;
+
+    // Match time slider width to the red rails in the animation
+    if (timeRow){
+      const cs = getComputedStyle(timeRow);
+      const lw = parseFloat(cs.getPropertyValue("--lw")) || 40;
+      const vw = parseFloat(cs.getPropertyValue("--vw")) || 50;
+      const pl = Math.max(0, railXL - lw);
+      const pr = Math.max(0, (W - railXR) - vw);
+      timeRow.style.setProperty("--pl", `${pl}px`);
+      timeRow.style.setProperty("--pr", `${pr}px`);
+    }
+
+    // Top wall (connects rails)
+    animCtx.strokeStyle = "#000";
+    animCtx.lineWidth = STYLE.anim.wallLW;
+    animCtx.beginPath();
+    animCtx.moveTo(railXL, topBarY);
+    animCtx.lineTo(railXR, topBarY);
+    animCtx.stroke();
+
+// Rails (thin-ish)
+    animCtx.strokeStyle = railCol;
+    animCtx.lineWidth = STYLE.anim.railLW;
+    animCtx.beginPath();
+    animCtx.moveTo(railXL, railTop);
+    animCtx.lineTo(railXL, railBottom);
+    animCtx.moveTo(railXR, railTop);
+    animCtx.lineTo(railXR, railBottom);
+    animCtx.stroke();
+
+    // Spring
+    const springTop = topBarY + 0.5*STYLE.anim.wallLW; // attach to bottom edge of top bar
+    const springBot = massY;
+    drawSpring(animCtx, massCX, springTop, springBot,
+              STYLE.anim.springCoils,
+              W * STYLE.anim.springAmpFrac,
+              STYLE.anim.springLW,
+              springCol);
+
+    // Mass block
+    animCtx.fillStyle = massFill;
+    animCtx.strokeStyle = massStroke;
+    animCtx.lineWidth = STYLE.anim.massLW;
+    animCtx.fillRect(massX, massY, massW, massH);
+    animCtx.strokeRect(massX, massY, massW, massH);
+  }
+
+  function resizeCanvases(){
+    const dpr = window.devicePixelRatio || 1;
+
+    // Size plot canvas
+    const plotW = plotCanvas.parentElement.getBoundingClientRect().width;
+    const plotH = plotW * STYLE.layout.plotHeightRatio;
+    plotCanvas.style.height = `${plotH}px`;
+
+    // Size anim canvas to match plot height
+    const animW = animCanvas.parentElement.getBoundingClientRect().width;
+    const animH = plotH;
+    animCanvas.style.height = `${animH}px`;
+
+    // Internal resolution
+    plotCanvas.width  = Math.round(plotW * dpr);
+    plotCanvas.height = Math.round(plotH * dpr);
+    plotCtx.setTransform(dpr,0,0,dpr,0,0);
+
+    animCanvas.width  = Math.round(animW * dpr);
+    animCanvas.height = Math.round(animH * dpr);
+    animCtx.setTransform(dpr,0,0,dpr,0,0);
+
+    // Update time slider range in case constants changed
+    tEl.min = T_MIN.toString();
+    tEl.max = T_MAX.toString();
+  }
+
+  function syncUI(){
+    wnValEl.textContent = fmt1(parseFloat(wnEl.value));
+    zetaValEl.textContent = fmt1(parseFloat(zetaEl.value));
+    tValEl.textContent = fmt2(tAnim);
+  }
+
+  function redrawAll(){
+    drawPlot();
+    drawAnim();
+  }
+
+  function setTime(t){
+    tAnim = clamp(t, T_MIN, T_MAX);
+    tEl.value = tAnim.toFixed(2);
+    syncUI();
+    redrawAll();
+  }
+
+  function onParamChange(){
+    rebuildSeries();
+    redrawAll();
+  }
+
+  wnEl.addEventListener("input", () => { syncUI(); onParamChange(); });
+  zetaEl.addEventListener("input", () => { syncUI(); onParamChange(); });
+
+  // Scrubbing behavior
+  tEl.addEventListener("pointerdown", () => { isScrubbing = true; });
+  window.addEventListener("pointerup", () => { if (isScrubbing){ isScrubbing = false; lastTS = null; } });
+  tEl.addEventListener("input", () => { setTime(parseFloat(tEl.value)); });
+
+  function animate(ts){
+    if (lastTS == null) lastTS = ts;
+    const dt = (ts - lastTS)/1000.0;
+    lastTS = ts;
+
+    if (!isScrubbing){
+      tAnim += dt * PLAYBACK;
+      const span = (T_MAX - T_MIN);
+      if (tAnim > T_MAX) tAnim = T_MIN + ((tAnim - T_MIN) % span);
+      tEl.value = tAnim.toFixed(2);
+      syncUI();
+    }
+
+    // redraw each frame
+    redrawAll();
+    requestAnimationFrame(animate);
+  }
+
+  // init
+  function init(){
+    resizeCanvases();
+    rebuildSeries();
+    syncUI();
+    redrawAll();
+    requestAnimationFrame(animate);
+  }
+
+  window.addEventListener("resize", () => {
+    resizeCanvases();
+    redrawAll();
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>

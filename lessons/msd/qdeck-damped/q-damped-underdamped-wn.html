@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Q1</title>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Shared quiz template -->
+  <link rel="stylesheet" href="../../../assets/quiz/quiz.css">
+  <script defer src="../../../assets/quiz/quiz.js"></script>
+</head>
+
+<body>
+  <div class="card quiz-mcq">
+    <h2 style="margin-top:0;">Explore: Undamped Solution</h2>
+
+    <p><strong>What happens as you increase $\omega_n$ for $\zeta < 1$?</strong></p>
+
+    <div class="choices" data-correct="0">
+      <button type="button" class="choice" data-i="0" aria-pressed="false">
+        <div class="tag">A</div><div class="content">The oscillations decay faster.</div>
+      </button>
+      <button type="button" class="choice" data-i="1" aria-pressed="false">
+        <div class="tag">B</div><div class="content">The oscillations decay slower.</div>
+      </button>
+      <button type="button" class="choice" data-i="2" aria-pressed="false">
+        <div class="tag">C</div><div class="content">The decay rate is the same.</div>
+      </button>
+    </div>
+
+    <div class="row" style="margin-top:0.9rem;">
+      <button type="button" data-action="check">Check</button>
+      <button type="button" data-action="show">Show solution</button>
+      <button type="button" data-action="reset">Reset</button>
+    </div>
+
+    <div class="feedback" aria-live="polite"></div>
+
+    <div class="solution-correct">✅ Correct. High frequency decays faster than low frequency.
+      This is very similar to why whales can communicate over such long distances.
+      Low frequency sound travels further than high frequency sound.</div>
+    <div class="solution-wrong">❌ Not quite.</div>
+    <div class="solution-show">Solution: A. High frequency decays faster than low frequency.
+      This is very similar to why whales can communicate over such long distances.
+      Low frequency sound travels further than high frequency sound.</div>
+  </div>
+</body>
+</html>

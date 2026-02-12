@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Undamped Forced Oscillator (Resonance)</title>
+  <style>
+    :root{
+      --bg: #ffffff;
+      --fg: #000000;
+      --grid: rgba(0,0,0,0.18);
+      --axis: rgba(0,0,0,0.95);
+
+      /* sliders */
+      --track: #a9cff2;
+      --thumb: #0c5a78;
+      --thumb-ring: #08394b;
+      --pl: 80px;   /* left padding */
+      --lw: 55px;   /* label width */
+      --vw: 70px;   /* value width */
+      --pr: 20px;   /* right padding */
+
+      /* font sizes */
+      --ui-font: 24px;     /* sliders (DOM text) */
+      --tick-font: 20px;   /* canvas tick numbers */
+      --axis-font: 24px;   /* canvas axis labels */
+    }
+
+    html, body { height: auto; }
+    body{
+      margin:0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      justify-content:center;
+      align-items:flex-start;
+    }
+
+    .wrap{
+      width: min(980px, 94vw);
+      padding: 22px 10px 26px;
+      box-sizing: border-box;
+    }
+
+    .plot-card{
+      width: 100%;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding: 0 0 0px;
+      box-sizing: border-box;
+    }
+
+    canvas{
+      width: 100%;
+      aspect-ratio: 3 / 2;
+      height: auto;
+      display: block;
+    }
+
+    .sliders{
+      width: 100%;
+      display:grid;
+      gap: 6px;
+      box-sizing: border-box;
+    }
+
+    .row{
+      display: grid;
+      grid-template-columns: var(--pl) var(--lw) 1fr var(--vw) var(--pr);
+      column-gap: 0px;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .row .lbl{ grid-column: 2; }
+    .row input[type="range"]{ grid-column: 3; width: 100%; min-width: 0; }
+    .row .val{ grid-column: 4; text-align: right; }
+
+    .lbl{
+      font-size: var(--ui-font);
+      font-weight: 400;
+      color: var(--fg);
+      user-select:none;
+      white-space: nowrap;
+    }
+
+    .val{
+      text-align:center;
+      font-variant-numeric: tabular-nums;
+      font-size: var(--ui-font);
+      font-weight: 400;
+      color: var(--fg);
+      user-select:none;
+      white-space: nowrap;
+    }
+
+    input[type="range"]{
+      -webkit-appearance:none;
+      appearance:none;
+      width:100%;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--track);
+      outline:none;
+      margin: 0;
+    }
+    input[type="range"]::-webkit-slider-runnable-track{
+      height: 12px;
+      border-radius: 999px;
+      background: var(--track);
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none;
+      appearance:none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--thumb);
+      border: 3px solid var(--thumb-ring);
+      box-shadow: 0 5px 12px rgba(0,0,0,0.18);
+      cursor:pointer;
+      margin-top: -7px;
+    }
+
+    input[type="range"]::-moz-range-track{
+      height: 12px;
+      border-radius: 999px;
+      background: var(--track);
+    }
+    input[type="range"]::-moz-range-thumb{
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--thumb);
+      border: 3px solid var(--thumb-ring);
+      box-shadow: 0 5px 12px rgba(0,0,0,0.18);
+      cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="plot-card">
+      <canvas id="plot" width="1200" height="700" aria-label="Forced oscillator plot"></canvas>
+    </div>
+
+    <div class="sliders">
+      <div class="row">
+        <div class="lbl">ωₙ</div>
+        <input id="wn" type="range" min="0.5" max="6" step="0.05" value="3.00" />
+        <div class="val" id="wnVal">3.00</div>
+      </div>
+
+      <div class="row">
+        <div class="lbl">ω<sub>f</sub></div>
+        <input id="wf" type="range" min="0.5" max="6" step="0.05" value="2.50" />
+        <div class="val" id="wfVal">2.50</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // Undamped forced oscillator:
+  //   y'' + ω_n^2 y = F cos(ω_f t)
+  //
+  // Here F = f0/m (forcing amplitude per unit mass).
+  // Change these if you want different ICs or forcing strength:
+  const Y0 = 1.0;
+  const V0 = 0.0;
+  const F  = 1.0;   // = f0/m
+
+  const T_MIN = 0.0;
+  const T_MAX = 25.0;
+
+  // Grid / ticks: "numbered outside axes"
+  const NX = 5;        // x-intervals (=> NX+1 tick labels)
+  const NY = 4;        // y-intervals
+
+  const canvas = document.getElementById("plot");
+  const ctx = canvas.getContext("2d");
+
+  const wnEl = document.getElementById("wn");
+  const wfEl = document.getElementById("wf");
+  const wnValEl = document.getElementById("wnVal");
+  const wfValEl = document.getElementById("wfVal");
+
+  function cssVarPx(name){
+    return parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  }
+
+  function fmt(x){
+    const y = (Math.abs(x) < 5e-4) ? 0 : x;
+    return y.toFixed(2);
+  }
+
+  function niceTickStep(span, n){
+    const raw = span / n;
+    const k = Math.pow(10, Math.floor(Math.log10(raw)));
+    const r = raw / k;
+    let m;
+    if (r < 1.5) m = 1;
+    else if (r < 3.5) m = 2;
+    else if (r < 7.5) m = 5;
+    else m = 10;
+    return m * k;
+  }
+
+  function computeYForcedUndamped(t, y0, v0, wn, wf, F){
+    // Handles non-resonant and resonant cases analytically.
+    const eps = 1e-6;
+
+    const wn2 = wn*wn;
+    const wf2 = wf*wf;
+    const denom = wn2 - wf2;
+
+    if (Math.abs(denom) > eps){
+      // Non-resonant:
+      // y(t) = (y0 - A) cos(wn t) + (v0/wn) sin(wn t) + A cos(wf t)
+      // A = F / (wn^2 - wf^2)
+      const A = F / denom;
+      const C1 = y0 - A;
+      const C2 = v0 / wn;
+      return C1*Math.cos(wn*t) + C2*Math.sin(wn*t) + A*Math.cos(wf*t);
+    } else {
+      // Resonant (wf ≈ wn):
+      // y_p = (F/(2 wn)) t sin(wn t)  for forcing F cos(wn t)
+      const C1 = y0;
+      const C2 = v0 / wn;
+      return C1*Math.cos(wn*t) + C2*Math.sin(wn*t) + (F/(2*wn))*t*Math.sin(wn*t);
+    }
+  }
+
+
+  function computeEnvelopeUndamped(t, y0, v0, wn, wf, F){
+    // A conservative envelope for the undamped forced response.
+    // For non-resonant case, we bound y(t) = Re{ R e^{-iφ} e^{i wn t} + A e^{i wf t} } by |...|.
+    // For resonant case (wf ≈ wn), y(t) is a single-frequency sinusoid with a time-varying sine coefficient.
+    const eps = 1e-6;
+    const wn2 = wn*wn;
+    const wf2 = wf*wf;
+    const denom = wn2 - wf2;
+
+    if (Math.abs(denom) > eps){
+      const A  = F / denom;
+      const C1 = y0 - A;
+      const C2 = v0 / wn;
+
+      // C1 cos(wn t) + C2 sin(wn t) = R cos(wn t - φ)
+      const R = Math.hypot(C1, C2);
+      const phi = Math.atan2(C2, C1);
+
+      const d = (wf - wn);
+      // Envelope magnitude: | R e^{i(wn t - φ)} + A e^{i(wf t)} |
+      const arg = d*t + phi;
+      const E2 = R*R + A*A + 2*R*A*Math.cos(arg);
+      return Math.sqrt(Math.max(0, E2));
+    } else {
+      // Resonant: y(t) = C1 cos(wn t) + (C2 + D t) sin(wn t), where D = F/(2 wn)
+      const C1 = y0;
+      const C2 = v0 / wn;
+      const D  = F/(2*wn);
+      const s  = C2 + D*t;
+      return Math.hypot(C1, s);
+    }
+  }
+
+  function draw(){
+    const W = canvas._cssW;
+    const H = canvas._cssH;
+
+    const wn = parseFloat(wnEl.value);
+    const wf = parseFloat(wfEl.value);
+
+    wnValEl.textContent = fmt(wn);
+    wfValEl.textContent = fmt(wf);
+
+    const N = 1200;
+
+    // Precompute y(t) and envelope so we can auto-scale y-limits.
+    const ys = new Array(N+1);
+    const Es = new Array(N+1);
+    let maxAbs = 0.0;
+
+    for (let k = 0; k <= N; k++){
+      const t = T_MIN + (k/N) * (T_MAX - T_MIN);
+
+      const y = computeYForcedUndamped(t, Y0, V0, wn, wf, F);
+      ys[k] = y;
+
+      const E = computeEnvelopeUndamped(t, Y0, V0, wn, wf, F);
+      Es[k] = E;
+
+      const a = Math.max(Math.abs(y), E);
+      if (a > maxAbs) maxAbs = a;
+    }
+
+    // Auto y-limits (symmetric)
+    const minSpan = 1.2;
+    let yMax = Math.max(minSpan, 1.08 * maxAbs);
+    // Keep labels from exploding too much if the resonance term gets huge
+    const hardCap = 80;
+    yMax = Math.min(yMax, hardCap);
+    const yMin = -yMax;
+
+    // Layout margins (space for outside tick labels + axis labels)
+    const m = {l: 90, r: 28, t: 22, b: 60};
+    const pw = W - m.l - m.r;
+    const ph = H - m.t - m.b;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Mapping
+    const xToPix = (t) => m.l + ((t - T_MIN)/(T_MAX - T_MIN)) * pw;
+    const yToPix = (y) => m.t + ((yMax - y)/(yMax - yMin)) * ph;
+
+    // Grid behind curve
+    ctx.save();
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--grid").trim();
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "butt";
+
+    const xStep = (T_MAX - T_MIN) / NX;
+    const xTicks = [];
+    for (let i = 0; i <= NX; i++) xTicks.push(T_MIN + i * xStep);
+
+    // y ticks based on "nice numbers"
+    const yStep = niceTickStep((yMax - yMin), NY);
+    const yTickStart = Math.floor(yMin / yStep) * yStep;
+    const yTickEnd   = Math.ceil(yMax / yStep) * yStep;
+    const yTicks = [];
+    for (let yt = yTickStart; yt <= yTickEnd + 1e-12; yt += yStep){
+      if (yt >= yMin - 1e-12 && yt <= yMax + 1e-12) yTicks.push(yt);
+    }
+
+    // Vertical gridlines
+    for (const xt of xTicks){
+      const xp = xToPix(xt);
+      ctx.beginPath();
+      ctx.moveTo(xp, yToPix(yMin));
+      ctx.lineTo(xp, yToPix(yMax));
+      ctx.stroke();
+    }
+
+    // Horizontal gridlines
+    for (const yt of yTicks){
+      const yp = yToPix(yt);
+      ctx.beginPath();
+      ctx.moveTo(xToPix(T_MIN), yp);
+      ctx.lineTo(xToPix(T_MAX), yp);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Axes rectangle
+    ctx.save();
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2.2;
+    ctx.strokeRect(m.l, m.t, pw, ph);
+    ctx.restore();
+
+    // Tick labels outside axes
+    const tickFont = cssVarPx("--tick-font");
+    const axisFont = cssVarPx("--axis-font");
+
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.85)";
+    ctx.font = `${tickFont}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif`;
+
+    // x tick labels under axis
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    for (const xt of xTicks){
+      const xp = xToPix(xt);
+      const txt = (Math.abs(xt) < 5e-4) ? "0" : xt.toFixed(1);
+      ctx.fillText(txt, xp, m.t + ph + 10);
+    }
+
+    // y tick labels left of axis
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    for (const yt of yTicks){
+      const yp = yToPix(yt);
+      const txt = (Math.abs(yt) < 5e-4) ? "0" : yt.toFixed(1);
+      ctx.fillText(txt, m.l - 10, yp);
+    }
+
+    // Axis labels
+    ctx.fillStyle = "#000";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.font = `${axisFont}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif`;
+    ctx.fillText("t", m.l + pw/2, m.t + ph + 52);
+
+    // y label rotated
+    ctx.save();
+    ctx.translate(30, m.t + ph/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText("y", 0, 0);
+    ctx.restore();
+
+    ctx.restore();
+
+    // Clip curve to plot window
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(m.l, m.t, pw, ph);
+    ctx.clip();
+
+    
+    // Dashed envelope: ±E(t)
+    ctx.save();
+    ctx.strokeStyle = "rgba(0,0,0,0.55)";
+    ctx.lineWidth = 2.2;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.setLineDash([10, 10]);
+
+    // Upper envelope
+    ctx.beginPath();
+    for (let k = 0; k <= N; k++){
+      const t = T_MIN + (k/N) * (T_MAX - T_MIN);
+      const E = Es[k];
+      const xp = xToPix(t);
+      const yp = yToPix(E);
+      if (k === 0) ctx.moveTo(xp, yp);
+      else ctx.lineTo(xp, yp);
+    }
+    ctx.stroke();
+
+    // Lower envelope
+    ctx.beginPath();
+    for (let k = 0; k <= N; k++){
+      const t = T_MIN + (k/N) * (T_MAX - T_MIN);
+      const E = Es[k];
+      const xp = xToPix(t);
+      const yp = yToPix(-E);
+      if (k === 0) ctx.moveTo(xp, yp);
+      else ctx.lineTo(xp, yp);
+    }
+    ctx.stroke();
+
+    ctx.restore();
+
+// Solid curve: y(t)
+    ctx.save();
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 3.0;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.setLineDash([]);
+
+    ctx.beginPath();
+    for (let k = 0; k <= N; k++){
+      const t = T_MIN + (k/N) * (T_MAX - T_MIN);
+      const y = ys[k];
+      const xp = xToPix(t);
+      const yp = yToPix(y);
+      if (k === 0) ctx.moveTo(xp, yp);
+      else ctx.lineTo(xp, yp);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // End clipping region
+    ctx.restore();
+
+    // Keep parent iframe height in sync (Quarto embed pattern)
+    postIframeHeight();
+  }
+
+  function resizeCanvasToCSSPixels(){
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const rect = canvas.getBoundingClientRect();
+    const cssW = rect.width;
+    const cssH = rect.height;
+
+    canvas.width  = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    canvas._cssW = cssW;
+    canvas._cssH = cssH;
+
+    draw();
+  }
+
+  [wnEl, wfEl].forEach(el => el.addEventListener("input", draw));
+  window.addEventListener("resize", resizeCanvasToCSSPixels);
+
+  resizeCanvasToCSSPixels();
+
+  // ---- Quarto iframe sizing helpers (same pattern as your example) ----
+  function postIframeHeight(){
+    const h = document.documentElement.scrollHeight;
+    window.parent.postMessage({ type: "quiz-iframe-height", height: h }, "*");
+  }
+  window.postIframeHeight = postIframeHeight;
+
+  window.addEventListener("load", () => {
+    postIframeHeight();
+    requestAnimationFrame(postIframeHeight);
+  });
+
+  new ResizeObserver(() => postIframeHeight()).observe(document.documentElement);
+})();
+</script>
+</body>
+</html>

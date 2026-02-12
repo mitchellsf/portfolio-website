@@ -1,0 +1,218 @@
+---
+title: "Home"
+page-layout: full
+toc: false
+---
+
+## Welcome to my portfolio!
+
+I build **computational fluid dynamics models** and **interactive lessons** that make math and physics feel intuitive.
+
+[Curriculum Vitae](resume/cv.qmd){.btn .btn-outline-primary .me-2}
+[Featured Research](research/wall_modeling.qmd){.btn .btn-outline-primary .me-2}
+[Featured Lesson](lessons/msd/msd.qmd){.btn .btn-outline-primary .me-2}
+
+---
+
+## Explore
+
+::: {.columns}
+
+::: {.column width="50%"}
+::: {.card .mb-4}
+::: {.card-body}
+### Resume
+My background and teaching approach.
+
+- [Curriculum Vitae](resume/cv.qmd)
+- [Teaching Philosophy](resume/teaching_philosophy.qmd)
+:::
+:::
+:::
+
+::: {.column width="50%"}
+::: {.card .mb-4}
+::: {.card-body}
+### Fun
+Miscellaneous things I've worked on and do for fun.
+
+- [Fun](fun/fun.qmd)
+:::
+:::
+:::
+
+:::
+
+::: {.columns}
+
+::: {.column width="50%"}
+::: {.card .mb-4}
+::: {.card-body}
+### Research
+Physics-based reduced order fluid dynamics modeling
+
+- [Wall Modeling](research/wall_modeling.qmd)
+- [Separation Modeling](research/separation_modeling.qmd)
+:::
+:::
+:::
+
+::: {.column width="50%"}
+::: {.card .mb-4}
+::: {.card-body}
+### Lessons
+Interactive lessons and visual explanations.
+
+- [Mass-Spring-Damper System](lessons/msd/msd.qmd)
+- More to come!
+- Interested in specific content? Contact me at: [engineeringtutor.nola@gmail.com](mailto:engineeringtutor.nola@gmail.com)
+:::
+:::
+:::
+
+:::
+
+---
+
+## Research snapshots
+
+::: {.columns}
+
+::: {.column width="33%"}
+::: {.card .mb-4}
+::: {.card-body .text-center}
+![](research/dissertation/chapter5-mtswm-time-scale-schematic.png){fig-alt="Length and time scales schematic" width=100%}
+*Length and time scales for the MTSWM*
+:::
+:::
+:::
+
+::: {.column width="33%"}
+::: {.card .mb-4}
+::: {.card-body .text-center}
+![](research/dissertation/MTSWM_velocity_profiles.png){fig-alt="Model velocity profiles figure" width=100%}
+*Velocity profiles for LaRTE / lamNEQ / turbNEQ*
+:::
+:::
+:::
+
+::: {.column width="33%"}
+::: {.card .mb-4}
+::: {.card-body .text-center}
+![](research/separation/separation_schematic.png){fig-alt="Flow separation schematic" width=100%}
+*Flow separation and wake schematic*
+:::
+:::
+:::
+
+:::
+
+---
+
+## Featured interactives
+
+::: {.columns}
+
+::: {.column width="50%"}
+::: {.card .mb-4}
+::: {.card-body}
+### Unforced response with damping
+
+<iframe class="quiz-iframe"
+  src="lessons/msd/interact-msd-damped-v3.html"
+  style="width:100%; max-width:900px; height:1px; border:0; display:block; margin:0 auto; overflow:hidden;"
+  loading="lazy"
+  scrolling="no">
+</iframe>
+
+*MSD interactive (unforced with damping):* $\zeta$ controls damping level.
+:::
+:::
+:::
+
+::: {.column width="50%"}
+::: {.card .mb-4}
+::: {.card-body}
+### Resonance and frequency response
+
+<iframe class="quiz-iframe"
+  src="lessons/msd/interact-msd-resonance-undamped.html"
+  style="width:100%; max-width:900px; height:1px; border:0; display:block; margin:0 auto; overflow:hidden;"
+  loading="lazy"
+  scrolling="no">
+</iframe>
+
+*MSD interactive (resonance):* $\omega_n$ = natural frequency, $\omega_f$ = forcing frequency.
+:::
+:::
+:::
+
+:::
+
+
+<!-- ---
+title: "Home"
+---
+
+Welcome to my portfolio! In this website you can see my resume, research, lessons, and fun things I've worked on!
+
+## Resume
+
+Go To: [Curriculum Vitae](resume/cv.qmd)
+Go To: [Teaching Philosophy](resume/teaching_philosophy.qmd)
+
+## Research
+
+### Wall Modeling
+
+Go To: [Wall Modeling](research/wall_modeling.qmd)
+
+::: {.text-center}
+![Length and time scales for the MTSWM.](research/dissertation/chapter5-mtswm-time-scale-schematic.png){width=60%}
+:::
+
+::: {.text-center}
+![Velocity profiles for the (a) LaRTE, (b) lamNEQ, and (c) turbNEQ models](research/dissertation/MTSWM_velocity_profiles.png){width=60%}
+:::
+
+### Separation Modeling
+
+Go To: [Separation Modeling](research/separation_modeling.qmd)
+
+::: {.text-center}
+![Schematic of flow separation and the resulting wake for flow over a prolate spheroid](research/separation/separation_schematic.png){width=60%}
+:::
+
+## Lessons
+
+### Mass-Spring-Damper System
+
+Go To: [Mass-Spring-Damper Lesson](lessons/msd/msd.qmd)
+
+::: {.text-center}
+
+<iframe class="quiz-iframe"
+  src="lessons/msd/interact-msd-damped-v3.html"
+  style="width:75%; height:1px; border:0; display:block; margin:0 auto; overflow:hidden;"
+  loading="lazy"
+  scrolling="no">
+</iframe>
+
+MSD interactive (unforced with damping): $\zeta$ controls damping level
+:::
+
+::: {.text-center}
+
+<iframe class="quiz-iframe"
+  src="lessons/msd/interact-msd-resonance-undamped.html"
+  style="width:75%; height:1px; border:0; display:block; margin:0 auto; overflow:hidden;"
+  loading="lazy"
+  scrolling="no">
+</iframe>
+
+MSD interactive (resonance): $\omega_n$ = natural frequency, $\omega_f$ = forcing frequency
+:::
+
+## Fun
+
+Go To: [Fun](fun/fun.qmd) -->
